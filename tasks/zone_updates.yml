@@ -5,25 +5,35 @@
     patterns: "db.*"
   register: existing_zones
 
+- name: zone_updates | create temp var
+  set_fact:
+    temp_zone_names: ""
+  delegate_to: localhost
+
 - name: zone_updates | append db. to list
   set_fact:
     temp_zone_names: "{{temp_zone_names}} db.{{item.name}} "
-  loop: "{{isc_bind_zones | dict2items}}"
+  loop: "{{isc_bind_zones}}"
+  delegate_to: localhost
 
 - name: zone_updates | find unused zones
   set_fact:
-    destroy_zones: "{{existing_zones | difference(temp_zone_names | split(' '))}}"
+    destroy_zones: "{{existing_zones.files | difference(temp_zone_names.split(' '))}}"
+  delegate_to: localhost
+
+- debug:
+    var: destroy_zones
 
 - name: zone_updates | remove unspecified zones
   file:
     path: /var/named/{{item}}
     state: absent
-  loop: destroy_zones
+  loop: "{{destroy_zones}}"
 
 - name: zone_updates | create zones
   template:
     src: zone.j2
     dest: /var/named/db.{{item.name}}
-    validate: /usr/sbin/named-checkzone {{item.name}} %s
+    validate: /usr/sbin/named-checkzone -d {{item.name}} %s
   loop: "{{isc_bind_zones}}"
   notify: rndc_reload

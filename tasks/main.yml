@@ -20,5 +20,5 @@
   template:
     src: named.conf
     dest: /etc/named.conf
-    validate: /usr/sbin/named-checkconf
+    validate: /usr/sbin/named-checkconf %s
   notify: rndc_reconfig

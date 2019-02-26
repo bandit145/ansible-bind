@@ -5,4 +5,4 @@
   command: rndc reload
 
 - name: rndc_reconfig
-  command: rndc-reconfig
+  command: rndc reconfig

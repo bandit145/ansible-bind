@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: all
+  vars:
+    isc_bind_keys:
+      - name: testkey
+        algorithim: hamc-sha512
+        secret: Bt890tlZHCNMl95QMAx2WtKh9vH4ZjF//UG0Uwp/RGK1fiAOIoNtHyPaf6YEN/PH/uAwQaH7f8iStNPQ50Gmlg==
+  roles:
+    - role: ansible-bind

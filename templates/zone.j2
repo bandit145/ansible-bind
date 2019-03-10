@@ -1,15 +1,15 @@
-{% set serial_names = isc_bind_zone_serials | json_query('[*].ansible_facts.isc_bind_zone_serial.name') %}
+{% set serial_names = isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.name+'`].ansible_facts.isc_bind_zone_serial.name') %}
 $TTL {{item.ttl | default('1h')}}
 {{item.name}}. IN SOA {{item.soa}}. {{item.contact}}. (
 	{%if serial_names and item.name in serial_names%}
-	{{isc_bind_zone_serials | json_query('[*].ansible_facts.isc_bind_zone_serial.name[item.name].serial')}} ;serial
+	{{isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]')}} ;serial
 	{%else%}
 	1 ;serial
 	{%endif%}
-	{{item.refresh | default('3h')}};refresh
-	{{item.retry | default('1h')}};retry
-	{{item.expire | default('1w')}}; expire
-	{{item.negative_cache | default('1h')}}; negative caching ttl
+	{{item.refresh | default('3h')}} ;refresh
+	{{item.retry | default('1h')}} ;retry
+	{{item.expire | default('1w')}} ;expire
+	{{item.negative_cache | default('1h')}} ;negative caching ttl
 )
 {%for record in item.records%}
 {{record}}

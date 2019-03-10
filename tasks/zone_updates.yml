@@ -64,12 +64,12 @@
 - name: zone_updates | increment serial on changed zones
   lineinfile:
     path: /var/named/db.{{item.item.name}}
-    line: "\t{{isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `item.item.name`].ansible_facts.isc_bind_zone_serial.serial | [0]') +1}} ;serial"
-    regexp: "\t{{isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `item.item.name`].ansible_facts.isc_bind_zone_serial.serial | [0]')}} ;serial"
+    line: "\t\t{{isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]') | int +1}} ;serial"
+    regexp: "\t\t{{isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]')}} ;serial"
     backrefs: true
   when:
     - existing_zones.matched > 0
-    - item.item.name in isc_bind_zone_serials.results | json_query('[*].ansible_facts.isc_bind_zone_serial.name')
+    - item.item.name in isc_bind_zone_serials | json_query('results[*].ansible_facts.isc_bind_zone_serial.name | [0]')
     - item.changed
   loop: "{{changed_zones.results}}"
 

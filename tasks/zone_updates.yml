@@ -1,39 +1,75 @@
 ---
+
 - name: zone_updates | find zone files
   find:
     path: /var/named
     patterns: "db.*"
   register: existing_zones
 
-- name: zone_updates | create temp var
+
+- name: zone_updates | get existing_zones path
   set_fact:
-    temp_zone_names: ""
-  delegate_to: localhost
+    existing_zones_paths:  "{{existing_zones.files | json_query('[*].path')}}"
 
 - name: zone_updates | append db. to list
   set_fact:
-    temp_zone_names: "{{temp_zone_names}} db.{{item.name}} "
+    temp_zone_name: "/var/named/db.{{item.name}}"
   loop: "{{isc_bind_zones}}"
-  delegate_to: localhost
+  register: temp_zone_names
 
 - name: zone_updates | find unused zones
   set_fact:
-    destroy_zones: "{{existing_zones.files | difference(temp_zone_names.split(' '))}}"
-  delegate_to: localhost
+    destroy_zones_paths: "{{existing_zones_paths | difference(temp_zone_names.results | json_query('[*].ansible_facts.temp_zone_name'))}}"
+  when: existing_zones.matched > 0
+
+- name: zone_updates | get updated zones
+  set_fact:
+    updated_zones_paths: "{{ existing_zones_paths | difference(destroy_zones_paths )}}"
+  when: existing_zones.matched > 0
+
+- name: zone_updates | get zone serials
+  shell: cat {{item}} | awk 'NR==3{print $1}'
+  register: updated_zones_serials
+  loop: "{{updated_zones_paths}}"
+  when: existing_zones.matched > 0
+
+- name: zone_updates | add serials
+  set_fact:
+    isc_bind_zone_serial: 
+      name: "{{item.split('.')[1:] | join('.')}}"
+      serial: "{{updated_zones_serials.results[updated_zones_paths.index(item)].stdout}}"
+  register: isc_bind_zone_serials 
+  loop: "{{updated_zones_paths}}"
+  when: existing_zones.matched > 0
 
 - debug:
-    var: destroy_zones
+    var: isc_bind_zone_serials
 
 - name: zone_updates | remove unspecified zones
   file:
-    path: /var/named/{{item}}
+    path: "{{item}}"  
     state: absent
-  loop: "{{destroy_zones}}"
+  loop: "{{destroy_zones_paths}}"
+  when: existing_zones.matched > 0
 
 - name: zone_updates | create zones
   template:
     src: zone.j2
     dest: /var/named/db.{{item.name}}
     validate: /usr/sbin/named-checkzone -d {{item.name}} %s
+  register: changed_zones
   loop: "{{isc_bind_zones}}"
   notify: rndc_reload
+
+- name: zone_updates | increment serial on changed zones
+  lineinfile:
+    path: /var/named/db.{{item.item.name}}
+    line: "\t{{isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `item.item.name`].ansible_facts.isc_bind_zone_serial.serial | [0]') +1}} ;serial"
+    regexp: "\t{{isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `item.item.name`].ansible_facts.isc_bind_zone_serial.serial | [0]')}} ;serial"
+    backrefs: true
+  when:
+    - existing_zones.matched > 0
+    - item.item.name in isc_bind_zone_serials.results | json_query('[*].ansible_facts.isc_bind_zone_serial.name')
+    - item.changed
+  loop: "{{changed_zones.results}}"
+

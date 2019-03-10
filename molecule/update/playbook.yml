@@ -1,0 +1,29 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    isc_bind_keys:
+      - name: testkey
+        algorithim: hmac-sha512
+        secret: Bt890tlZHCNMl95QMAx2WtKh9vH4ZjF//UG0Uwp/RGK1fiAOIoNtHyPaf6YEN/PH/uAwQaH7f8iStNPQ50Gmlg==
+    isc_bind_zones:
+      - name: test.com
+        type: master
+        soa: ns1.test.com
+        contact: phil@test.com
+        records:
+          - test.com. IN NS ns1.test.com.
+          - ns1 IN A 192.168.1.2
+          - otherrecord IN A 192.168.1.3
+
+  pre_tasks:
+    - name: copy file for test
+      copy:
+        src: "{{item}}"
+        dest: /var/named/
+      loop:
+        - db.test.com
+        - db.delete.com
+  roles:
+    - role: ansible-bind

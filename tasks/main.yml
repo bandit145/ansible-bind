@@ -1,9 +1,25 @@
 ---
 # tasks file for ansible-bind
 
-- name: main | install bind
+- name: main | open firewall for nonsecure dns
+  firewalld:
+    port: "{{item}}"
+    permanent: true
+    immediate: true
+    state: enabled
+  when: isc_bind_insecure
+  loop:
+    - 53/udp
+    - 53/tcp
+
+- include_tasks: secure_dns.yml
+  when: isc_bind_secure
+
+- name: main | install bind packages
   yum:
-    name: bind
+    name: 
+      - bind
+      - stunnel
     state: present
 
 - name: main | start bind

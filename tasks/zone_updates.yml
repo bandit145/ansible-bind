@@ -6,7 +6,6 @@
     patterns: "db.*"
   register: existing_zones
 
-
 - name: zone_updates | get existing_zones path
   set_fact:
     existing_zones_paths:  "{{existing_zones.files | json_query('[*].path')}}"
@@ -41,9 +40,6 @@
   register: isc_bind_zone_serials 
   loop: "{{updated_zones_paths}}"
   when: existing_zones.matched > 0
-
-- debug:
-    var: isc_bind_zone_serials
 
 - name: zone_updates | remove unspecified zones
   file:

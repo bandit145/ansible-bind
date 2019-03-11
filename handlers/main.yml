@@ -6,3 +6,9 @@
 
 - name: rndc_reconfig
   command: rndc reconfig
+
+- name: enable_stunnel
+  service:
+    name: stunnel
+    status: restarted
+    enabled: true

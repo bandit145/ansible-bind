@@ -1,0 +1,23 @@
+---
+
+- name: secure_dns | open firewall for secure dns
+  firewalld:
+    port: 853/tcp
+    permanent: true
+    immediate: true
+    state: enabled
+
+- name: secure_dns | copy stunnel config
+  template:
+    dest: /etc/stunnel/stunnel.conf
+    src: stunnel.conf
+  notify: enable_stunnel
+
+- name: secure_dns | copy cert/key
+  template:
+    src: "{{item}}"
+    dest: /etc/ssl/certs
+    mode: 0660
+  loop:
+    - dns.crt
+    - dns.key

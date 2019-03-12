@@ -57,6 +57,7 @@
     group: named
     validate: /usr/sbin/named-checkzone -d {{item.name}} %s
   register: changed_zones
+  when: item.type == 'master' or item.type == 'master'
   loop: "{{isc_bind_zones}}"
   notify:
     - rndc_reload

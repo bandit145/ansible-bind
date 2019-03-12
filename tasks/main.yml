@@ -1,6 +1,10 @@
 ---
 # tasks file for ansible-bind
 
+- name: main | create user for stunnel
+  user:
+    name: stunnel
+
 - name: main | open firewall for nonsecure dns
   firewalld:
     port: "{{item}}"
@@ -17,10 +21,27 @@
 
 - name: main | install bind packages
   yum:
-    name: 
+    name:
       - bind
       - stunnel
     state: present
+
+- name: main | copy stunnel systemd file
+  copy:
+    src: stunnel.service
+    dest: /usr/lib/systemd/system/
+  register: stunnel_service
+
+- name: main | reload daemon
+  command: systemctl daemon-reload
+  when: stunnel_service.changed
+
+- name: main | create logging directory
+  file:
+    path: /var/named/log
+    owner: named
+    group: named
+    state: directory
 
 - name: main | start bind
   service:
@@ -36,5 +57,7 @@
   template:
     src: named.conf
     dest: /etc/named.conf
+    owner: named
+    group: named
     validate: /usr/sbin/named-checkconf %s
   notify: rndc_reconfig

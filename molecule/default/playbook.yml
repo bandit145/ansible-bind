@@ -2,6 +2,13 @@
 - name: Converge
   hosts: all
   become: true
+  pre_tasks:
+
+    - name: start firewalld
+      service:
+        name: firewalld
+        state: started
+
   vars:
     isc_bind_keys:
       - name: testkey

@@ -18,6 +18,8 @@
     src: "{{item}}"
     dest: /etc/ssl/certs
     mode: 0660
+    owner: stunnel
+    group: stunnel
   loop:
     - dns.crt
     - dns.key

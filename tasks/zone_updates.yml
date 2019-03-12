@@ -8,7 +8,7 @@
 
 - name: zone_updates | get existing_zones path
   set_fact:
-    existing_zones_paths:  "{{existing_zones.files | json_query('[*].path')}}"
+    existing_zones_paths: "{{existing_zones.files | json_query('[*].path')}}"
 
 - name: zone_updates | append db. to list
   set_fact:
@@ -34,28 +34,33 @@
 
 - name: zone_updates | add serials
   set_fact:
-    isc_bind_zone_serial: 
+    isc_bind_zone_serial:
       name: "{{item.split('.')[1:] | join('.')}}"
       serial: "{{updated_zones_serials.results[updated_zones_paths.index(item)].stdout}}"
-  register: isc_bind_zone_serials 
+  register: isc_bind_zone_serials
   loop: "{{updated_zones_paths}}"
   when: existing_zones.matched > 0
 
 - name: zone_updates | remove unspecified zones
   file:
-    path: "{{item}}"  
+    path: "{{item}}"
     state: absent
   loop: "{{destroy_zones_paths}}"
   when: existing_zones.matched > 0
+  notify: rndc_reconfig
 
 - name: zone_updates | create zones
   template:
     src: zone.j2
     dest: /var/named/db.{{item.name}}
+    owner: named
+    group: named
     validate: /usr/sbin/named-checkzone -d {{item.name}} %s
   register: changed_zones
   loop: "{{isc_bind_zones}}"
-  notify: rndc_reload
+  notify:
+    - rndc_reload
+    - rndc_reconfig
 
 - name: zone_updates | increment serial on changed zones
   lineinfile:
@@ -68,4 +73,3 @@
     - item.item.name in isc_bind_zone_serials | json_query('results[*].ansible_facts.isc_bind_zone_serial.name | [0]')
     - item.changed
   loop: "{{changed_zones.results}}"
-

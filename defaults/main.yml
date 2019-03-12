@@ -1,2 +1,15 @@
 ---
 # defaults file for ansible-bind
+
+isc_bind_insecure: true
+isc_bind_secure: false
+
+isc_bind_logging_channels:
+  - name: default_log
+    versions: 3
+    size: 20m
+    severity: info
+isc_bind_logging_categories:
+  - name: default
+    channels:
+      - default_log

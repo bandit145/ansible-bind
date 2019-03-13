@@ -32,8 +32,10 @@
     dest: /usr/lib/systemd/system/
   register: stunnel_service
 
+# this is needed to make the stunnel service available for later
 - name: main | reload daemon
-  command: systemctl daemon-reload
+  systemd:
+    daemon_reload: true
   when: stunnel_service.changed
 
 - name: main | create logging directory

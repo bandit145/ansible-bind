@@ -14,15 +14,17 @@ provisioner:
   name: ansible
   lint:
     name: ansible-lint
+    options:
+      x: ['ANSIBLE0016']
 scenario:
   name: update
   test_sequence:
     - destroy
+    - lint
     - create
     - converge
     # stat module makes this impossible to pass
     # - idempotence
-    - lint
     - verify
 verifier:
   name: testinfra

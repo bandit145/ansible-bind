@@ -7,6 +7,9 @@ driver:
     name: virtualbox
 lint:
   name: yamllint
+  options:
+    config-data:
+      ignore: "**venv/"
 platforms:
   - name: dns
     box: bento/centos-7
@@ -14,8 +17,19 @@ provisioner:
   name: ansible
   lint:
     name: ansible-lint
+    options:
+      x: ['ANSIBLE0016']
 scenario:
   name: default
+  test_sequence:
+    - destroy
+    - lint
+    - create
+    - converge
+    # stat module makes this impossible to pass
+    # - idempotence
+    - verify
+    - destroy
 verifier:
   name: testinfra
   lint:

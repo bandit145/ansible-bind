@@ -7,6 +7,9 @@ driver:
     name: virtualbox
 lint:
   name: yamllint
+  options:
+    config-data:
+      ignore: "**venv/"
 platforms:
   - name: dns
     box: bento/centos-7
@@ -26,6 +29,7 @@ scenario:
     # stat module makes this impossible to pass
     # - idempotence
     - verify
+    - destroy
 verifier:
   name: testinfra
   lint:

@@ -23,7 +23,7 @@
 
 - name: zone_updates | get updated zones
   set_fact:
-    updated_zones_paths: "{{ existing_zones_paths | difference(destroy_zones_paths )}}"
+    updated_zones_paths: "{{ existing_zones_paths | difference(destroy_zones_paths)}}"
   when: existing_zones.matched > 0
 
 - name: zone_updates | get zone serials
@@ -49,28 +49,46 @@
   when: existing_zones.matched > 0
   notify: rndc_reconfig
 
-- name: zone_updates | create zones
-  template:
-    src: zone.j2
-    dest: /var/named/db.{{item.name}}
-    owner: named
-    group: named
-    validate: /usr/sbin/named-checkzone -d {{item.name}} %s
-  register: changed_zones
-  when: item.type == 'master' or item.type == 'master'
-  loop: "{{isc_bind_zones}}"
-  notify:
-    - rndc_reload
-    - rndc_reconfig
+- name: zone_updates | freeze and update zones
+  block:
+    - name: zone_updates | freeze dynamic zones
+      command: rndc freeze {{item.name}}
+      when:
+        - existing_zones.matched > 0
+        - "'/var/named/db.'+item.name in updated_zones_paths" 
+        - item.allow_update is defined
+      loop: "{{isc_bind_zones}}"
 
-- name: zone_updates | increment serial on changed zones
-  lineinfile:
-    path: /var/named/db.{{item.item.name}}
-    line: "\t\t{{isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]') | int +1}} ;serial"
-    regexp: "\t\t{{isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]')}} ;serial"
-    backrefs: true
-  when:
-    - existing_zones.matched > 0
-    - item.item.name in isc_bind_zone_serials | json_query('results[*].ansible_facts.isc_bind_zone_serial.name | [0]')
-    - item.changed
-  loop: "{{changed_zones.results}}"
+    - name: zone_updates | create zones
+      template:
+        src: zone.j2
+        dest: /var/named/db.{{item.name}}
+        owner: named
+        group: named
+        validate: /usr/sbin/named-checkzone -d {{item.name}} %s
+      register: changed_zones
+      when: item.type == 'master' or item.type == 'master'
+      loop: "{{isc_bind_zones}}"
+      notify:
+        - rndc_reload
+        - rndc_reconfig
+
+    - name: zone_updates | increment serial on changed zones
+      lineinfile:
+        path: /var/named/db.{{item.item.name}}
+        line: "\t\t{{isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]') | int +1}} ;serial"
+        regexp: "\t\t{{isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]')}} ;serial"
+        backrefs: true
+      when:
+        - existing_zones.matched > 0
+        - item.item.name in isc_bind_zone_serials | json_query('results[*].ansible_facts.isc_bind_zone_serial.name | [0]')
+        - item.changed
+      loop: "{{changed_zones.results}}"
+  always:
+    - name: zone_updates | unfreeze dynamic zones
+      command: rndc thaw {{item.name}}
+      when:
+        - existing_zones.matched > 0
+        - "'/var/named/db.'+item.name in updated_zones_paths" 
+        - item.allow_update is defined
+      loop: "{{isc_bind_zones}}"

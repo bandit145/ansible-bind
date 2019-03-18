@@ -23,6 +23,7 @@
   yum:
     name:
       - bind
+      - bind-utils
       - stunnel
     state: present
 

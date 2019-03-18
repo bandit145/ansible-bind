@@ -16,6 +16,15 @@
           - test.com. IN NS ns1.test.com.
           - ns1 IN A 192.168.1.2
           - otherrecord IN A 192.168.1.3
+      - name: dynamic.com
+        type: master
+        soa: ns1.dynamic.com
+        contact: phil@test.com
+        records:
+          - dynamic.com. IN NS ns1.dynamic.com.
+          - ns1 IN A 192.168.1.2
+        allow_update:
+          - key testkey
 
   pre_tasks:
 

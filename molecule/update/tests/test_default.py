@@ -18,12 +18,18 @@ def test_named_running(host):
 
 
 def test_zone_files(host):
-    delete_com = host.file('/var/named/db.delete.com')
-    test_com = host.file('/var/named/db.test.com')
-    assert not delete_com.exists
-    assert test_com.contains('2 ;serial')
+    with host.sudo():
+        assert not host.file('/var/named/db.delete.com').exists
+        assert host.file('/var/named/db.test.com').contains('2 ;serial')
+
+
+def test_ports(host):
+    ports = ['53/udp', '53/tcp']
+    with host.sudo():
+        for port in ports:
+            assert port in host.check_output('firewall-cmd --list-ports')
 
 
 def test_log(host):
-    default_log = host.file('/var/named/log/default_log')
-    assert default_log.exists
+    with host.sudo():
+        assert host.file('/var/named/log/default_log').exists

@@ -1,7 +1,5 @@
 [Unit]
 Description=SSL tunnel for network daemons
-Documentation=man:stunnel https://www.stunnel.org/docs.html
-DefaultDependencies=no
 After=network.target
 After=syslog.target
 
@@ -11,6 +9,11 @@ Alias=stunnel.target
 
 [Service]
 Type=forking
-EnvironmentFile=-/etc/sysconfig/stunnel.conf 
 ExecStart=/usr/bin/stunnel /etc/stunnel/stunnel.conf
-LimitNOFILE=infinity 
+ExecStop=/usr/bin/killall -9 stunnel
+
+# Give up if ping don't get an answer
+TimeoutSec=600
+
+Restart=always
+PrivateTmp=false

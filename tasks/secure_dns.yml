@@ -9,24 +9,23 @@
 
 - name: secure_dns | create stunnel log directory
   file:
-    path: var/log/stunnel
+    path: /var/log/stunnel/
     state: directory
-    owner: stunnel
-    group: stunnel
+
+- name: secure_dns | create stunnel log file
+  file:
+    path: /var/log/stunnel/stunnel.log
+    state: touch
 
 - name: secure_dns | create stunnel config directory
   file:
     path: /etc/stunnel
     state: directory
-    owner: stunnel
-    group: stunnel
 
 - name: secure_dns | copy stunnel config
   template:
     dest: /etc/stunnel/stunnel.conf
     src: stunnel.conf
-    owner: stunnel
-    group: stunnel
   notify: enable_stunnel
 
 - name: secure_dns | copy cert/key
@@ -34,8 +33,6 @@
     src: "{{item}}"
     dest: /etc/ssl/certs
     mode: 0600
-    owner: stunnel
-    group: stunnel
   loop:
     - dns.crt
     - dns.key

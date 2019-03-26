@@ -13,3 +13,17 @@
         name: firewalld
         state: started
         enabled: true
+
+    - name: stat test.com
+      stat:
+        path: /var/named/db.test.com
+      register: test_exists
+
+    - name: copy file for test
+      copy:
+        src: "{{ item }}"
+        dest: /var/named/
+      when: not test_exists.stat.exists
+      loop:
+        - db.test.com
+        - db.delete.com

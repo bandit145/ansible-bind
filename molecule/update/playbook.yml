@@ -25,26 +25,5 @@
           - ns1 IN A 192.168.1.2
         allow_update:
           - key testkey
-
-  pre_tasks:
-
-    - name: start firewalld
-      service:
-        name: firewalld
-        state: started
-
-    - name: stat test.com
-      stat:
-        path: /var/named/db.test.com
-      register: test_exists
-
-    - name: copy file for test
-      copy:
-        src: "{{item}}"
-        dest: /var/named/
-      when: not test_exists.stat.exists
-      loop:
-        - db.test.com
-        - db.delete.com
   roles:
     - role: ansible-bind

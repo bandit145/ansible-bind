@@ -28,7 +28,7 @@ def test_ports(host):
         output = host.check_output('firewall-cmd --list-ports')
     assert '853/tcp' in output
     for port in no_ports:
-        assert port not in host.check_output('firewall-cmd --list-ports')
+        assert port not in output.split(' ')
 
 
 def test_log(host):

@@ -13,5 +13,5 @@ jobs:
   include:
   - stage: test
     script:
-      - molecule --debug test --all
+      - molecule test --all
     if: type = pull_request

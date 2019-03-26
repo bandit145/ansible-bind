@@ -1,4 +1,0 @@
-molecule
-ansible
-jmespath
-python-vagrant

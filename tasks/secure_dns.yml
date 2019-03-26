@@ -30,7 +30,7 @@
 
 - name: secure_dns | copy cert/key
   template:
-    src: "{{item}}"
+    src: "{{ item }}"
     dest: /etc/ssl/certs
     mode: 0600
   loop:

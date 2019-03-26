@@ -1,8 +1,7 @@
 ---
 galaxy_info:
-  author: your name
-  description: your description
-  company: your company (optional)
+  author: Philip Bove
+  description: bind dns server for centos
 
   # If the issue tracker for your role is not on github, uncomment the
   # next line and provide a value
@@ -15,9 +14,9 @@ galaxy_info:
   # - GPLv3
   # - Apache
   # - CC-BY
-  license: license (GPLv2, CC-BY, etc)
+  license: MIT
 
-  min_ansible_version: 2.4
+  min_ansible_version: 2.6
 
   # If this a Container Enabled role, provide the minimum Ansible Container version.
   # min_ansible_container_version:
@@ -36,7 +35,10 @@ galaxy_info:
   # To view available platforms and versions (or releases), visit:
   # https://galaxy.ansible.com/api/v1/platforms/
   #
-  # platforms:
+  platforms:
+    - name: CentOS
+      versions:
+        - 7
   # - name: Fedora
   #   versions:
   #   - all

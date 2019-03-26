@@ -19,8 +19,7 @@ def test_named_running(host):
 
 def test_zone_files(host):
     with host.sudo():
-        assert not host.file('/var/named/db.delete.com').exists
-        assert host.file('/var/named/db.test.com').contains('2 ;serial')
+        assert host.file('/var/named/db.test.com').contains('1 ;serial')
 
 
 def test_ports(host):

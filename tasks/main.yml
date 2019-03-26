@@ -7,7 +7,7 @@
 
 - name: main | open firewall for nonsecure dns
   firewalld:
-    port: "{{item}}"
+    port: "{{ item }}"
     permanent: true
     immediate: true
     state: enabled

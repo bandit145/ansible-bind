@@ -2,9 +2,7 @@
 dependency:
   name: galaxy
 driver:
-  name: vagrant
-  provider:
-    name: virtualbox
+  name: docker
 lint:
   name: yamllint
   options:
@@ -12,7 +10,12 @@ lint:
       ignore: "**venv/"
 platforms:
   - name: dns
-    box: bento/centos-7
+    image:  bandit145/centos7-os-ansible
+    privileged: true
+    pre_build_image: true
+    override_command: False
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
 provisioner:
   name: ansible
   lint:
@@ -25,6 +28,7 @@ scenario:
     - destroy
     - lint
     - create
+    - prepare
     - converge
     # stat module makes this impossible to pass
     # - idempotence

@@ -12,8 +12,8 @@
   vars:
     isc_bind_secure: true
     isc_bind_insecure: false
-    isc_bind_cert: "{{lookup('file','cert.pem')}}"
-    isc_bind_key: "{{lookup('file','key.pem')}}"
+    isc_bind_cert: "{{ lookup('file','cert.pem') }}"
+    isc_bind_key: "{{ lookup('file','key.pem') }}"
     isc_bind_keys:
       - name: testkey
         algorithim: hmac-sha512

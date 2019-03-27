@@ -41,6 +41,15 @@
   loop: "{{ updated_zones_paths }}"
   when: existing_zones.matched > 0
 
+- name: zone_updates | get current dynamic record
+  shell: set pipefail -o; cat /var/named/db.{{ item.name }} | awk 'NR>8{print $0}'
+  register: current_dynamic_records
+  when:
+    - existing_zones.matched > 0
+    - "'/var/named/db.'+item.name in existing_zones | json_query('files[*].path')"
+    - item.allow_update is defined
+  loop: "{{ isc_bind_zones }}"
+
 - name: zone_updates | remove unspecified zones
   file:
     path: "{{ item }}"
@@ -67,7 +76,7 @@
         group: named
         validate: /usr/sbin/named-checkzone -d {{ item.name }} %s
       register: changed_zones
-      when: item.type == 'master' or item.type == 'master'
+      when: item.type == 'master' or item.type == 'slave'
       loop: "{{ isc_bind_zones }}"
       notify:
         - rndc_reload

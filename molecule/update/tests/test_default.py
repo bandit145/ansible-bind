@@ -6,17 +6,6 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
     os.environ['MOLECULE_INVENTORY_FILE']).get_hosts('all')
 
 
-def test_packages(host):
-    assert host.package('stunnel').is_installed
-    assert host.package('bind').is_installed
-
-
-def test_named_running(host):
-    named = host.service('named')
-    assert named.is_running
-    assert named.is_enabled
-
-
 def test_zone_files(host):
     with host.sudo():
         assert not host.file('/var/named/db.delete.com').exists
@@ -25,9 +14,10 @@ def test_zone_files(host):
 
 def test_ports(host):
     ports = ['53/udp', '53/tcp']
+    output = host.check_output('firewall-cmd --list-ports').split(' ')
     with host.sudo():
         for port in ports:
-            assert port in host.check_output('firewall-cmd --list-ports')
+            assert port in output
 
 
 def test_log(host):

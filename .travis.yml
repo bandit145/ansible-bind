@@ -14,4 +14,3 @@ jobs:
   - stage: test
     script:
       - molecule test --all
-    if: type = pull_request

@@ -11,10 +11,9 @@ $TTL {{item.ttl | default('1h')}}
 	{{item.expire | default('1w')}} ;expire
 	{{item.negative_cache | default('1h')}} ;negative caching ttl
 )
-{%if item.allow_update is defined and existing_zones.matched > 0 and item.name in existing_zones.files | json_query('files[*].path')%}
+{%if item.allow_update is defined and existing_zones.matched > 0 and '/var/named/db.'+item.name in existing_zones | json_query('files[*].path')%}
 {%set dyn_rec = current_dynamic_records | json_query('results[?item.name==`'+item.name+'`].stdout_lines | [0]')%}
-{{dyn_rec}}
-{%for record in item.records | intersect(dyn_rec) %}
+{%for record in item.records | union(dyn_rec) %}
 {{record | indent(width=0)}}
 {%endfor%}
 {%else%}

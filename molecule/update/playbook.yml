@@ -25,5 +25,17 @@
           - ns1 IN A 192.168.1.2
         allow_update:
           - key testkey
+  pre_tasks:
+    - name: stat dynamic.com
+      stat:
+        path: /var/named/db.dynamic.com
+      register: dynamic_exists
+
+    - name: copy dynamic zone
+      copy:
+        src: db.dynamic.com
+        dest: /var/named
+      when: dynamic_exists.stat.exists
+
   roles:
     - role: ansible-bind

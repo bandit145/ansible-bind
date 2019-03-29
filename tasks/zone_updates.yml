@@ -76,7 +76,17 @@
         group: named
         validate: /usr/sbin/named-checkzone -d {{ item.name }} %s
       register: changed_zones
-      when: item.type == 'master' or item.type == 'slave'
+      when: item.type == 'master'
+      loop: "{{ isc_bind_zones }}"
+      notify:
+        - rndc_reload
+        - rndc_reconfig
+
+    - name: zone_updates | create zones
+      file:
+        path: /var/named/db.{{ item.name }}
+        state: touch
+      when: item.type == 'slave'
       loop: "{{ isc_bind_zones }}"
       notify:
         - rndc_reload
@@ -85,8 +95,8 @@
     - name: zone_updates | increment serial on changed zones
       lineinfile:
         path: /var/named/db.{{ item.item.name }}
-        line: "\t\t{{ isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]') | int +1 }} ;serial" # noqa 204
-        regexp: "\t\t{{ isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]') }} ;serial"  # noqa 204
+        line: "\t{{ isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]') | int +1 }} ;serial" # noqa 204
+        regexp: "^\t{{ isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]') }} ;serial"  # noqa 204
         backrefs: true
       when:
         - existing_zones.matched > 0

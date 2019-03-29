@@ -1,11 +1,11 @@
 {% set serial_names = isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.name+'`].ansible_facts.isc_bind_zone_serial.name') %}
 $TTL {{item.ttl | default('1h')}}
 {{item.name}}. IN SOA {{item.soa}}. {{item.contact}}. (
-	{%if serial_names and item.name in serial_names%}
+	{% if serial_names and item.name in serial_names -%}
 	{{isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]')}} ;serial
-	{%else%}
+	{% else -%}
 	1 ;serial
-	{%endif%}
+	{% endif -%}
 	{{item.refresh | default('3h')}} ;refresh
 	{{item.retry | default('1h')}} ;retry
 	{{item.expire | default('1w')}} ;expire
@@ -14,10 +14,10 @@ $TTL {{item.ttl | default('1h')}}
 {%if item.allow_update is defined and existing_zones.matched > 0 and '/var/named/db.'+item.name in existing_zones | json_query('files[*].path')%}
 {%set dyn_rec = current_dynamic_records | json_query('results[?item.name==`'+item.name+'`].stdout_lines | [0]')%}
 {%for record in item.records | union(dyn_rec) %}
-{{record | indent(width=0)}}
+{{record}}
 {%endfor%}
 {%else%}
 {%for record in item.records%}
-{{record | indent(width=0)}}
+{{record}}
 {%endfor%}
 {%endif%}

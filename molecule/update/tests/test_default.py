@@ -9,9 +9,11 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
 def test_zone_files(host):
     with host.sudo():
         assert not host.file('/var/named/db.delete.com').exists
-        assert host.file('/var/named/db.test.com').contains('2 ;serial')
-        assert host.file('/var/named/db.dynamic.com').contains('3 ;serial')
-        assert host.file('/var/named/db.dynamic.com').contains('combine-record IN A 192.168.1.3')  # noqa 501
+        test_content = host.file('/var/named/db.test.com').content_string.split('\n') # noqa 501
+        assert test_content[2] == '\t2 ;serial'
+        dynamic_content = host.file('/var/named/db.dynamic.com').content_string.split('\n') # noqa 501
+        assert dynamic_content[2] == '\t1 ;serial'
+        assert dynamic_content[10] == 'combine-record IN A 192.168.1.3'
 
 
 def test_ports(host):

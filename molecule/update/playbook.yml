@@ -32,9 +32,9 @@
       register: dynamic_exists
 
     - name: copy dynamic zone
-      copy:
-        src: db.dynamic.com
-        dest: /var/named
+      lineinfile:
+        path: /var/named/db.dynamic.com
+        line: "combine-record IN A 192.168.1.3"
       when: dynamic_exists.stat.exists
 
   roles:

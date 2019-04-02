@@ -5,6 +5,8 @@ ansible-bind
 
 This role installs and configures bind dns server. It also supports DNS over TLS using stunnel.
 
+This is a bit of a hacky mess and tons of logic for getting existing serial numbers of zones (This will most likely be replace with a module I'll write to read and generate RFC 1035 zonefiles)
+
 Requirements
 ------------
 

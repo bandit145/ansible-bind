@@ -8,17 +8,60 @@ This role installs and configures bind dns server. It also supports DNS over TLS
 Requirements
 ------------
 
-jmespath needs to be installed on the ansible control node
+jmespath needs to be installed on the ansible control node.
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+```
+isc_bind_insecure: open firewalld on tcp/udp 53 (default: true)
+isc_bind_secure: open tcp/853 with stunnel and provided certs (default: false)
+isc_bind_cert: must be provided if isc_bind_secure: true (cert for stunnel)
+isc_bind_key: must be provided if isc_bind_secure: true (key for stunnel)
+isc_bind_logging_channels: logging channels for bind (default values below)
+  - name: default_log
+    versions: 3
+    size: 20m
+    severity: info
+isc_bind_logging_categories: logging categories (default config below)
+  - name: default
+    channels:
+      - default_log
+isc_bind_keys: dynamic update keys for bind (example config shown below)
+    - name: testkey
+     algorithim: hmac-sha512
+     secret: Bt890tlZHCNMl95QMAx2WtKh9vH4ZjF//UG0Uwp/RGK1fiAOIoNtHyPaf6YEN/PH/uAwQaH7f8iStNPQ50Gmlg==
+isc_bind_zones: list of zone (example config listed below, if allow-update is defined then it is considered a dynamic zone and will freeze and unthaw zones as needed. This will also merge the list of static records with what has been added dynamically). There are many supported options here. I would take a look at templates/named.conf "zones" secton to see what is supported.
+    - name: test.com
+      type: master
+      soa: ns1.test.com
+      contact: phil@test.com
+      records:
+        - test.com. IN NS ns1.test.com.
+        - ns1 IN A 192.168.1.2
+isc_bind_acls: bind acls to define
+	- name: random_acl
+	  acls:
+	  	- 192.168.1.1
+	  	- 192.168.1.2
+isc_bind_servers: bind servers to define
+	- address: 10.1.10.8
+	  keys:
+	  	- testkey
+isc_bind_listen_on: listen of interfaces to listen on (defaults to 127.0.0.1)
+	- any
+isc_bind_listen_onv6: v6 interfaces to listen on (defaults to ::1)
+	- any
+isc_bind_allow_update_forwarding: list of allowed addresses to forward updates through to the master
+	- 10.1.10.9
+isc_bind_allow_notify: list of addresses allowed to notify server
+	- 10.1.10.8
+isc_bind_allow_transfer: list of addresses allowed to transfer from this servers (default: none)
+	- 10.1.10.9
+```
 
 Example Playbook
 ----------------
-
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
 
 ```
 ---

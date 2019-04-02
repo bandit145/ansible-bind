@@ -13,8 +13,16 @@ def test_packages(host):
 
 def test_named_running(host):
     named = host.service('named')
+    stunnel = host.service('stunnel')
     assert named.is_running
     assert named.is_enabled
+    assert stunnel.is_running
+    assert stunnel.is_running
+
+
+def test_stunnel(host):
+    output = host.check_output("openssl s_client -connect 127.0.0.1:853 < /dev/null 2>&1 | awk '{if($1 == \"Protocol\"){print $3}}'")  # noqa 501
+    assert output.lower() == 'tlsv1.2'
 
 
 def test_zone_files(host):

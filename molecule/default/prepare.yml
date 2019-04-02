@@ -1,0 +1,16 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  tasks:
+
+    - name: install firewalld
+      yum:
+        name: firewalld
+        state: present
+
+    - name: start firewalld
+      service:
+        name: firewalld
+        state: started
+        enabled: true

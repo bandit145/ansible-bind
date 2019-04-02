@@ -1,0 +1,106 @@
+---
+
+- name: zone_updates | find zone files
+  find:
+    path: /var/named
+    patterns: "db.*"
+  register: existing_zones
+
+- name: zone_updates | get existing_zones path
+  set_fact:
+    existing_zones_paths: "{{ existing_zones.files | json_query('[*].path') }}"
+
+- name: zone_updates | append db. to list
+  set_fact:
+    temp_zone_name: "/var/named/db.{{ item.name }}"
+  loop: "{{ isc_bind_zones }}"
+  register: temp_zone_names
+
+- name: zone_updates | find unused zones
+  set_fact:
+    destroy_zones_paths: "{{ existing_zones_paths | difference(temp_zone_names.results | json_query('[*].ansible_facts.temp_zone_name')) }}"
+  when: existing_zones.matched > 0
+
+- name: zone_updates | get updated zones
+  set_fact:
+    updated_zones_paths: "{{ existing_zones_paths | difference(destroy_zones_paths) }}"
+  when: existing_zones.matched > 0
+
+- name: zone_updates | get zone serials
+  shell: set -o pipefail; cat {{ item }} | awk 'NR==3{print $1}'
+  register: updated_zones_serials
+  loop: "{{ updated_zones_paths }}"
+  when: existing_zones.matched > 0
+
+- name: zone_updates | add serials
+  set_fact:
+    isc_bind_zone_serial:
+      name: "{{ item.split('.')[1:] | join('.') }}"
+      serial: "{{ updated_zones_serials.results[updated_zones_paths.index(item)].stdout }}"
+  register: isc_bind_zone_serials
+  loop: "{{ updated_zones_paths }}"
+  when: existing_zones.matched > 0
+
+- name: zone_updates | get current dynamic record
+  shell: set -o pipefail; cat /var/named/db.{{ item.name }} | awk 'NR>8{print $0}'
+  register: current_dynamic_records
+  when:
+    - existing_zones.matched > 0
+    - "'/var/named/db.'+item.name in existing_zones | json_query('files[*].path')"
+    - item.allow_update is defined
+  loop: "{{ isc_bind_zones }}"
+
+- name: zone_updates | remove unspecified zones
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ destroy_zones_paths }}"
+  when: existing_zones.matched > 0
+  notify: rndc_reconfig
+
+- name: zone_updates | freeze and update zones
+  block:
+    - name: zone_updates | freeze dynamic zones
+      command: rndc freeze {{ item.name }}
+      when:
+        - item.type == 'master'
+        - existing_zones.matched > 0
+        - "'/var/named/db.'+item.name in updated_zones_paths"
+        - item.allow_update is defined
+      loop: "{{ isc_bind_zones }}"
+
+    - name: zone_updates | create zones
+      template:
+        src: zone.j2
+        dest: /var/named/db.{{ item.name }}
+        owner: named
+        group: named
+        validate: /usr/sbin/named-checkzone -d {{ item.name }} %s
+      register: changed_zones
+      when: item.type == 'master'
+      loop: "{{ isc_bind_zones }}"
+      notify:
+        - rndc_reload
+        - rndc_reconfig
+
+    - name: zone_updates | increment serial on changed zones
+      lineinfile:
+        path: /var/named/db.{{ item.item.name }}
+        line: "\t{{ isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]') | int +1 }} ;serial" # noqa 204
+        regexp: "^\t{{ isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]') }} ;serial"  # noqa 204
+        backrefs: true
+      when:
+        - item.item.type == 'master'
+        - existing_zones.matched > 0
+        - item.item.name in isc_bind_zone_serials | json_query('results[*].ansible_facts.isc_bind_zone_serial.name | [0]')
+        - item.changed
+      loop: "{{ changed_zones.results }}"
+  always:
+    - name: zone_updates | unfreeze dynamic zones
+      command: rndc thaw {{ item.name }}
+      when:
+        - item.type == 'master'
+        - existing_zones.matched > 0
+        - "'/var/named/db.'+item.name in updated_zones_paths"
+        - item.allow_update is defined
+      loop: "{{ isc_bind_zones }}"

@@ -1,0 +1,30 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  pre_tasks:
+
+    - name: start firewalld
+      service:
+        name: firewalld
+        state: started
+
+  vars:
+    isc_bind_secure: true
+    isc_bind_insecure: false
+    isc_bind_cert: "{{ lookup('file','cert.pem') }}"
+    isc_bind_key: "{{ lookup('file','key.pem') }}"
+    isc_bind_keys:
+      - name: testkey
+        algorithim: hmac-sha512
+        secret: Bt890tlZHCNMl95QMAx2WtKh9vH4ZjF//UG0Uwp/RGK1fiAOIoNtHyPaf6YEN/PH/uAwQaH7f8iStNPQ50Gmlg==
+    isc_bind_zones:
+      - name: test.com
+        type: master
+        soa: ns1.test.com
+        contact: phil@test.com
+        records:
+          - test.com. IN NS ns1.test.com.
+          - ns1 IN A 192.168.1.2
+  roles:
+    - role: ansible-bind

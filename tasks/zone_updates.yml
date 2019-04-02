@@ -63,6 +63,7 @@
     - name: zone_updates | freeze dynamic zones
       command: rndc freeze {{ item.name }}
       when:
+        - item.type == 'master'
         - existing_zones.matched > 0
         - "'/var/named/db.'+item.name in updated_zones_paths"
         - item.allow_update is defined
@@ -82,16 +83,6 @@
         - rndc_reload
         - rndc_reconfig
 
-    - name: zone_updates | create zones
-      file:
-        path: /var/named/db.{{ item.name }}
-        state: touch
-      when: item.type == 'slave'
-      loop: "{{ isc_bind_zones }}"
-      notify:
-        - rndc_reload
-        - rndc_reconfig
-
     - name: zone_updates | increment serial on changed zones
       lineinfile:
         path: /var/named/db.{{ item.item.name }}
@@ -99,6 +90,7 @@
         regexp: "^\t{{ isc_bind_zone_serials | json_query('results[?ansible_facts.isc_bind_zone_serial.name == `'+item.item.name+'`].ansible_facts.isc_bind_zone_serial.serial | [0]') }} ;serial"  # noqa 204
         backrefs: true
       when:
+        - item.item.type == 'master'
         - existing_zones.matched > 0
         - item.item.name in isc_bind_zone_serials | json_query('results[*].ansible_facts.isc_bind_zone_serial.name | [0]')
         - item.changed
@@ -107,6 +99,7 @@
     - name: zone_updates | unfreeze dynamic zones
       command: rndc thaw {{ item.name }}
       when:
+        - item.type == 'master'
         - existing_zones.matched > 0
         - "'/var/named/db.'+item.name in updated_zones_paths"
         - item.allow_update is defined

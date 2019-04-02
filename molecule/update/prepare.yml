@@ -14,6 +14,11 @@
         state: started
         enabled: true
 
+
+- name: Prep ns1
+  hosts: ns1
+  gather_facts: false
+  tasks:
     - name: stat test.com
       stat:
         path: /var/named/db.test.com

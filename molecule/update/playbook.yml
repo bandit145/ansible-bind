@@ -1,8 +1,17 @@
 ---
-- name: Converge
+- name: Gather facts
   hosts: all
   become: true
+  gather_facts: true
+
+- name: Converge
+  hosts: ns1
+  become: true
   vars:
+    isc_bind_listen_on:
+      - any
+    isc_bind_allow_transfer:
+      - "{{ hostvars['ns2']['ansible_default_ipv4']['address'] }}"
     isc_bind_keys:
       - name: testkey
         algorithim: hmac-sha512
@@ -11,12 +20,16 @@
       - name: test.com
         type: master
         soa: ns1.test.com
+        also_notify:
+          - "{{ hostvars['ns2']['ansible_default_ipv4']['address'] }}"
         contact: phil@test.com
         records:
           - test.com. IN NS ns1.test.com.
           - ns1 IN A 192.168.1.2
           - otherrecord IN A 192.168.1.3
       - name: dynamic.com
+        also_notify:
+            - "{{ hostvars['ns2']['ansible_default_ipv4']['address'] }}"
         type: master
         soa: ns1.dynamic.com
         contact: phil@test.com
@@ -37,5 +50,46 @@
         line: "combine-record IN A 192.168.1.3"
       when: dynamic_exists.stat.exists
 
+  roles:
+    - role: ansible-bind
+
+- name: configure bind slave server
+  hosts: ns2
+  become: true
+  vars:
+    isc_bind_allow_notify:
+      - "{{ hostvars['ns1']['ansible_default_ipv4']['address'] }}"
+    isc_bind_listen_on:
+      - any
+    isc_bind_masters:
+      - name: master
+        addresses:
+          - "{{ hostvars['ns1']['ansible_default_ipv4']['address'] }}"
+    isc_bind_keys:
+      - name: testkey
+        algorithim: hmac-sha512
+        secret: Bt890tlZHCNMl95QMAx2WtKh9vH4ZjF//UG0Uwp/RGK1fiAOIoNtHyPaf6YEN/PH/uAwQaH7f8iStNPQ50Gmlg==
+    isc_bind_zones:
+      - name: test.com
+        type: slave
+        masters:
+          - master
+        soa: ns1.test.com
+        contact: phil@test.com
+        records:
+          - test.com. IN NS ns1.test.com.
+          - ns1 IN A 192.168.1.2
+          - otherrecord IN A 192.168.1.3
+      - name: dynamic.com
+        masters:
+          - master
+        type: slave
+        soa: ns1.dynamic.com
+        contact: phil@test.com
+        records:
+          - dynamic.com. IN NS ns1.dynamic.com.
+          - ns1 IN A 192.168.1.2
+        allow_update:
+          - key testkey
   roles:
     - role: ansible-bind

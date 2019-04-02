@@ -9,7 +9,14 @@ lint:
     config-data:
       ignore: "**venv/"
 platforms:
-  - name: dns
+  - name: ns1
+    image:  bandit145/centos7-os-ansible
+    privileged: true
+    pre_build_image: true
+    override_command: False
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  - name: ns2
     image:  bandit145/centos7-os-ansible
     privileged: true
     pre_build_image: true

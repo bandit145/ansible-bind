@@ -1,4 +1,6 @@
 molecule
 ansible
+ansible-lint
+testinfra
 jmespath
 docker

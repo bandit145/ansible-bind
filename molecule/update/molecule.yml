@@ -3,24 +3,23 @@ dependency:
   name: galaxy
 driver:
   name: docker
-lint:
-  name: yamllint
-  options:
-    config-data:
-      ignore: "**venv/"
+lint: |
+    set -e
+    yamllint .
+    ansible-lint -x 503,
 platforms:
   - name: ns1
-    image:  bandit145/centos7-os-ansible
+    image: bandit145/centos7-os-ansible
     privileged: true
     pre_build_image: true
-    override_command: False
+    override_command: false
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
   - name: ns2
-    image:  bandit145/centos7-os-ansible
+    image: bandit145/centos7-os-ansible
     privileged: true
     pre_build_image: true
-    override_command: False
+    override_command: false
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
 provisioner:
@@ -31,18 +30,5 @@ provisioner:
       x: ['ANSIBLE0016']
 scenario:
   name: update
-  test_sequence:
-    - destroy
-    - lint
-    - create
-    - prepare
-    - converge
-    # stat module makes this impossible to pass
-    # - idempotence
-    - converge
-    - verify
-    - destroy
 verifier:
   name: testinfra
-  lint:
-    name: flake8

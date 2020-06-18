@@ -8,3 +8,5 @@ services:
   - docker
 script:
   - molecule test --all
+
+if: branch = master

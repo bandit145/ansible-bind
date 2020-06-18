@@ -11,13 +11,10 @@
     permanent: true
     immediate: true
     state: enabled
-  when: isc_bind_insecure
+  when: isc_bind_insecure | bool
   loop:
     - 53/udp
     - 53/tcp
-
-- include_tasks: secure_dns.yml
-  when: isc_bind_secure
 
 - name: main | install bind packages
   yum:
@@ -25,7 +22,30 @@
       - bind
       - bind-utils
       - stunnel
+      - nginx
+      - go
+      - git
     state: present
+
+- name: main | create git clone location
+  file:
+    path: /doh
+    state: directory
+
+- name: main | get DoH server
+  git:
+    repo: https://github.com/m13253/dns-over-https.git  # noqa 401
+    dest: /doh
+    update: false
+    version: "{{ isc_bind_doh_server_version | default('master') }}"
+  register: git_clone
+
+- name: main | compile and install as systemd service
+  make:
+    chdir: /doh
+    target: install
+  register: doh_server
+  when: git_clone.changed | bool
 
 - name: main | copy stunnel systemd file
   copy:
@@ -37,7 +57,10 @@
 - name: main | reload daemon
   systemd:
     daemon_reload: true
-  when: stunnel_service.changed
+  when: stunnel_service.changed | bool or doh_server.changed | bool
+
+- include_tasks: secure_dns.yml
+  when: isc_bind_secure | bool
 
 - name: main | create logging directory
   file:

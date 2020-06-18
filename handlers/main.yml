@@ -7,8 +7,20 @@
 - name: rndc_reconfig
   command: rndc reconfig
 
+- name: enable_nginx
+  service:
+    name: nginx
+    state: restarted
+    enabled: true
+
 - name: enable_stunnel
   service:
     name: stunnel
+    state: restarted
+    enabled: true
+
+- name: enable_doh_server
+  service:
+    name: doh-server
     state: restarted
     enabled: true

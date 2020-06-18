@@ -1,5 +1,4 @@
 import os
-
 import testinfra.utils.ansible_runner
 
 testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
@@ -19,6 +18,10 @@ def test_named_running(host):
     assert stunnel.is_running
     assert stunnel.is_running
 
+def test_nginx_running(host):
+    nginx = host.service('nginx')
+    assert nginx.is_running
+    assert nginx.is_enabled
 
 def test_stunnel(host):
     output = host.check_output("openssl s_client -connect 127.0.0.1:853 < /dev/null 2>&1 | awk '{if($1 == \"Protocol\"){print $3}}'")  # noqa 501

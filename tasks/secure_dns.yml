@@ -2,10 +2,30 @@
 
 - name: secure_dns | open firewall for secure dns
   firewalld:
-    port: 853/tcp
+    port: "{{ item }}"
     permanent: true
     immediate: true
     state: enabled
+  loop:
+    - 443/tcp
+    - 853/tcp
+
+- name: secure_dns | generate 4096 dhparam
+  command: openssl dhparam -dsaparam -out /etc/nginx/dhparam.pem 4096
+  args:
+    creates: /etc/nginx/dhparam.pem
+
+- name: secure_dns | copy nginx config
+  template:
+    src: nginx.conf
+    dest: /etc/nginx/conf.d/doh.conf
+  notify: enable_nginx
+
+- name: secure_dns | copy config file for doh server
+  template:
+    src: doh-server.conf
+    dest: /etc/dns-over-https/doh-server.conf
+  notify: enable_doh_server
 
 - name: secure_dns | create stunnel log directory
   file:
@@ -16,6 +36,7 @@
   file:
     path: /var/log/stunnel/stunnel.log
     state: touch
+  changed_when: false
 
 - name: secure_dns | create stunnel config directory
   file:
